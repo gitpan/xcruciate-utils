@@ -4,3 +4,5 @@ Revision history for Perl extension Xcruciate::Utils.
 	- original version; created by h2xs 1.23 with options
 		-X -n Xcruciate::Utils
 
+0.02  Sun Jan 11 08:47:00 2009
+        - maybe it will work better if I put the pm in the right place

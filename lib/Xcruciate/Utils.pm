@@ -1,87 +1,192 @@
+#! /usr/bin/perl -w
+
 package Xcruciate::Utils;
+use Exporter;
+@ISA = ('Exporter');
+@EXPORT = qw();
+our $VERSION = 0.02;
 
-use 5.010000;
-use strict;
-use warnings;
-
-require Exporter;
-use AutoLoader qw(AUTOLOAD);
-
-our @ISA = qw(Exporter);
-
-# Items to export into callers namespace by default. Note: do not export
-# names by default without a very good reason. Use EXPORT_OK instead.
-# Do not simply export all your public functions/methods/constants.
-
-# This allows declaration	use Xcruciate::Utils ':all';
-# If you do not need this, moving things directly into @EXPORT or @EXPORT_OK
-# will save memory.
-our %EXPORT_TAGS = ( 'all' => [ qw(
-	
-) ] );
-
-our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
-
-our @EXPORT = qw(
-	
-);
-
-our $VERSION = '0.01';
-
-
-# Preloaded methods go here.
-
-# Autoload methods go after =cut, and are processed by the autosplit program.
-
-1;
-__END__
-# Below is stub documentation for your module. You'd better edit it!
+use Time::gmtime;
 
 =head1 NAME
 
-Xcruciate::Utils - Perl extension for blah blah blah
+Xcruciate::Utils - Utilities for Xcruciate
 
 =head1 SYNOPSIS
 
-  use Xcruciate::Utils;
-  blah blah blah
+(Put example code here.)
 
 =head1 DESCRIPTION
 
-Stub documentation for Xcruciate::Utils, created by h2xs. It looks like the
-author of the extension was negligent enough to leave the stub
-unedited.
-
-Blah blah blah.
-
-=head2 EXPORT
-
-None by default.
-
-
-
-=head1 SEE ALSO
-
-Mention other useful documentation such as the documentation of
-related modules or operating system documentation (such as man pages
-in UNIX), or any relevant external documentation such as RFCs or
-standards.
-
-If you have a mailing list set up for your module, mention it here.
-
-If you have a web site set up for your module, mention it here.
+Provides utility functions Xcruciate (currently previewing
+from time to time at F<http://dhansak.www.xcruciate.co.uk:8080>). You shouldn't need
+to use these directly.
 
 =head1 AUTHOR
 
-mark, E<lt>mark@E<gt>
+Mark Howe, E<lt>melonman@cpan.orgE<gt>
+
+=head2 EXPORT
+
+None
+
+=head1 FUNCTIONS
+
+=head2 check_path(option,path,permissions)
+
+Checks that the path exists, and that it has the appropriate
+permissions, where permissions contains some combination of r, w and x. If not,
+it dies, using the value of option to produce a semi-intelligable error message.
+
+=cut
+
+sub check_path {
+    my $option = shift;
+    my $path = shift;
+    my $permissions = shift;
+    die "No file corrsponding to path for '$option'" unless -e $path;
+    die "File '$path' for '$option' option is not readable" if ($permissions =~/r/ and (not -r $path));
+    die "File '$path' for '$option' option is not writable" if ($permissions =~/w/ and (not -w $path));
+    die "File '$path' for '$option' option is not executable" if ($permissions =~/x/ and (not -x $path));
+}
+
+=head2 check_absolute_path(option,path,permissions)
+
+A lot like &check_path (which it calls), but also checks that the path is
+absolute (ie is starts with a /).
+
+=cut
+
+sub check_absolute_path {
+    my $option = shift;
+    my $path = shift;
+    my $permissions = shift;
+    die "Path for '$option' must be absolute" unless $path =~ m!^/!;
+    check_path($option,$path,$permissions);
+}
+
+=head2 type_check(selfhash,name,value,record)
+
+Returns errors on typechecking value against record. Name is provided for error messages. Selfhash might be useful one day. Note that selfhash is not yet blessed.
+
+=cut
+
+sub type_check {
+    my $self = shift;
+    my $name = shift;
+    my $value = shift;
+    my $record = shift;
+    my @errors = ();
+    my $list_name = '';
+    $list_name = "Item $_[0] of" if defined $_[0];
+    my $datatype = $record->[2];
+    if ($datatype eq 'integer') {
+	push @errors,sprintf("$list_name Entry called %s should be an integer",$name) unless $value=~/^\d+$/;
+	push @errors,sprintf("$list_name Entry called %s is less than minimum permitted value of $record->[3]",$name) if ((defined $record->[3]) and ($record->[3] > $value));
+	push @errors,sprintf("$list_name Entry called %s exceeds permitted value of $record->[4]",$name) if ((defined $record->[4]) and ($record->[4] < $value));
+    } elsif ($datatype eq 'float') {
+	push @errors,sprintf("$list_name Entry called %s should be a number",$name) unless $value=~/^-?\d+(\.\d+)$/;
+	push @errors,sprintf("$list_name Entry called %s is less than minimum permitted value of $record->[3]",$name) if ((defined $record->[3]) and ($record->[3] > $value));
+	push @errors,sprintf("$list_name Entry called %s exceeds permitted value of $record->[4]",$name) if ((defined $record->[4]) and ($record->[4] < $value));
+    } elsif ($datatype eq 'ip') {
+	push @errors,sprintf("$list_name Entry called %s should be an ip address",$name) unless $value=~/^\d\d?\d?\.\d\d?\d?\.\d\d?\d?\.\d\d?\d?$/;
+    } elsif ($datatype eq 'cidr') {
+	push @errors,sprintf("$list_name Entry called %s should be a CIDR ip range",$name) unless $value=~m!^\d\d?\d?\.\d\d?\d?\.\d\d?\d?\.\d\d?\d?/\d\d?$!;
+    } elsif ($datatype eq 'xml_leaf') {
+	push @errors,sprintf("$list_name Entry called %s should be an xml filename",$name) unless $value=~/^[A-Za-z0-9_-]+\.xml$/;
+    } elsif ($datatype eq 'xsl_leaf') {
+	push @errors,sprintf("$list_name Entry called %s should be an xsl filename",$name) unless $value=~/^[A-Za-z0-9_-]+\.xsl$/;
+    } elsif ($datatype eq 'yes_no') {
+	push @errors,sprintf("$list_name Entry called %s should be 'yes' or 'no'",$name) unless $value=~/^(yes)|(no)$/;
+    } elsif ($datatype eq 'word') {
+	push @errors,sprintf("$list_name Entry called %s should be a word (ie no whitespace)",$name) unless $value=~/^\S+$/;
+    } elsif ($datatype eq 'function_name') {
+	push @errors,sprintf("$list_name Entry called %s should be an xpath function name",$name) unless $value=~/^[^\s:]+(:\S+)?$/;
+    } elsif ($datatype eq 'path') {
+	push @errors,sprintf("$list_name Entry called %s should be a path",$name) unless $value=~/^\S+$/;
+    } elsif ($datatype eq 'email') {
+	push @errors,sprintf("$list_name Entry called %s should be an email address",$name) unless $value=~/^[^\s@]+\@[^\s@]+$/;
+    } elsif (($datatype eq 'abs_file') or ($datatype eq 'abs_dir')) {
+	push @errors,sprintf("$list_name Entry called %s should be absolute (ie it should start with /)",$name) unless $value=~/^\//;
+	push @errors,sprintf("No file or directory corresponds to $list_name entry called %s",$name) unless -e $value;
+	if (-e $value) {
+	    push @errors,sprintf("$list_name Entry called %s should be a file, not a directory",$name) if ((-d $value) and ($datatype eq 'abs_file'));
+	    push @errors,sprintf("$list_name Entry called %s should be a directory, not a file",$name) if ((-f $value) and ($datatype eq 'abs_dir'));
+	    push @errors,sprintf("$list_name Entry called %s must be readable",$name) if ($record->[3]=~/r/ and not -r $value);
+	    push @errors,sprintf("$list_name Entry called %s must be writable",$name) if ($record->[3]=~/w/ and not -w $value);
+	    push @errors,sprintf("$list_name Entry called %s must be executable",$name) if ($record->[3]=~/x/ and not -x $value);
+	}
+    } elsif ($datatype eq 'abs_create'){
+	$value=~m!^(.*/)?([^/]+$)!;
+	my $dir = $1;
+	push @errors,sprintf("$list_name Entry called %s should be absolute (ie it should start with /)",$name) unless $value=~/^\//;
+	push @errors,sprintf("$list_name No file or directory corresponds to entry called %s, and insufficient rights to create one",$name) if ((not -e $value) and ((not $dir) or (-d $dir) and ((not -r $dir) or (not -w $dir) or (not -x $dir))));
+	push @errors,sprintf("$list_name Entry called %s must be readable",$name) if ($record->[3]=~/r/ and -e $value and not -r $value);
+	push @errors,sprintf("$list_name Entry called %s must be writable",$name) if ($record->[3]=~/w/ and -e $value and  not -w $value);
+	push @errors,sprintf("$list_name Entry called %s must be executable",$name) if ($record->[3]=~/x/ and -e $value and not -x $value);
+    } else {
+	die sprintf("Unknown unit config datatype %s",$datatype);
+    }
+    return @errors;
+}
+
+=head2 apache_time(epoch_time)
+
+Produces an apache-style timestamp from an epoch time.
+
+=cut
+
+sub apache_time {
+    my $epoch_time = shift;
+    my $time = gmtime($epoch_time);
+    my @days = qw(Sun Mon Tue Wed Thu Fri Sat);
+    my @months = qw(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec);
+    return sprintf("%s, %02d %s %04d %02d:%02d:%02d GMT",
+		   $days[$time->wday],
+		   $time->mday,
+		   $months[$time->mon],
+		   $time->year+1900,
+		   $time->hour,
+		   $time->min,
+		   $time->sec);
+}
+
+=head2 datetime(epoch_time)
+
+Converts GMT epoch time to the format expected by XSLT date functions.
+
+=cut
+
+sub datetime {#Converts GMT epoch time to the format expected by XSLT date functions
+    my $epoch_time = shift;
+    my $time = gmtime($epoch_time);
+    return sprintf("%04d-%02d-%02dT%02d:%02d:%02d+00:00",
+		   $time->year+1900,
+		   $time->mon+1,
+		   $time->mday,
+		   $time->hour,
+		   $time->min,
+		   $time->sec)
+}
+
+=head1 BUGS
+
+The best way to report bugs is via the Xcruciate bugzilla site (F<http://www.xcruciate.co.uk/devel>).
+
+=head1 COMING SOON
+
+A lot more code that is currently spread across assorted scripts, probably split into several modules.
+
+=head1 PREVIOUS VERSIONS
+
+B<0.01>: First upload
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2009 by mark
+Copyright (C) 2008 by SARL Cyberporte/Menteith Consulting
 
-This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself, either Perl version 5.10.0 or,
-at your option, any later version of Perl 5 you may have available.
-
+This library is distributed under BSD licence (F<http://dhansak.xcruciate.co.uk:8080/licence-code>).
 
 =cut
+
+1;
