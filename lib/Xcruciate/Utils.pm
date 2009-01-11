@@ -4,7 +4,7 @@ package Xcruciate::Utils;
 use Exporter;
 @ISA = ('Exporter');
 @EXPORT = qw();
-our $VERSION = 0.02;
+our $VERSION = 0.03;
 
 use Time::gmtime;
 
@@ -14,12 +14,11 @@ Xcruciate::Utils - Utilities for Xcruciate
 
 =head1 SYNOPSIS
 
-(Put example code here.)
+check_path('A very nice path',$path,'rw');
 
 =head1 DESCRIPTION
 
-Provides utility functions Xcruciate (currently previewing
-from time to time at F<http://dhansak.www.xcruciate.co.uk:8080>). You shouldn't need
+Provides utility functions Xcruciate ( F<http://www.xcruciate.co.uk>). You shouldn't need
 to use these directly.
 
 =head1 AUTHOR
@@ -171,7 +170,7 @@ sub datetime {#Converts GMT epoch time to the format expected by XSLT date funct
 
 =head1 BUGS
 
-The best way to report bugs is via the Xcruciate bugzilla site (F<http://www.xcruciate.co.uk/devel>).
+The best way to report bugs is via the Xcruciate bugzilla site (F<http://www.xcruciate.co.uk/bugzilla>).
 
 =head1 COMING SOON
 
@@ -181,11 +180,13 @@ A lot more code that is currently spread across assorted scripts, probably split
 
 B<0.01>: First upload
 
+B<0.03>: First upload containing module
+
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2008 by SARL Cyberporte/Menteith Consulting
+Copyright (C) 2007 - 2009 by SARL Cyberporte/Menteith Consulting
 
-This library is distributed under BSD licence (F<http://dhansak.xcruciate.co.uk:8080/licence-code>).
+This library is distributed under BSD licence (F<http://www.xcruciate.co.uk/licence-code>).
 
 =cut
 
