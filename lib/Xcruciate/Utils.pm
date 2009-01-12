@@ -4,7 +4,7 @@ package Xcruciate::Utils;
 use Exporter;
 @ISA = ('Exporter');
 @EXPORT = qw();
-our $VERSION = 0.03;
+our $VERSION = 0.04;
 
 use Time::gmtime;
 
@@ -181,6 +181,8 @@ A lot more code that is currently spread across assorted scripts, probably split
 B<0.01>: First upload
 
 B<0.03>: First upload containing module
+
+B<0.04> Changed minimum perl version to 5.8.8
 
 =head1 COPYRIGHT AND LICENSE
 
