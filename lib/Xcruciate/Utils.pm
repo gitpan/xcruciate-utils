@@ -4,7 +4,7 @@ package Xcruciate::Utils;
 use Exporter;
 @ISA = ('Exporter');
 @EXPORT = qw();
-our $VERSION = 0.04;
+our $VERSION = 0.05;
 
 use Time::gmtime;
 
@@ -75,18 +75,19 @@ sub type_check {
     my $name = shift;
     my $value = shift;
     my $record = shift;
+    $value =~s/^\s*(.*?)\s*$/$1/s;
     my @errors = ();
     my $list_name = '';
     $list_name = "Item $_[0] of" if defined $_[0];
     my $datatype = $record->[2];
     if ($datatype eq 'integer') {
 	push @errors,sprintf("$list_name Entry called %s should be an integer",$name) unless $value=~/^\d+$/;
-	push @errors,sprintf("$list_name Entry called %s is less than minimum permitted value of $record->[3]",$name) if ((defined $record->[3]) and ($record->[3] > $value));
-	push @errors,sprintf("$list_name Entry called %s exceeds permitted value of $record->[4]",$name) if ((defined $record->[4]) and ($record->[4] < $value));
+	push @errors,sprintf("$list_name Entry called %s is less than minimum permitted value of $record->[3]",$name) if ($value=~/^\d+$/ and (defined $record->[3]) and ($record->[3] > $value));
+	push @errors,sprintf("$list_name Entry called %s exceeds permitted value of $record->[4]",$name) if ($value=~/^\d+$/ and (defined $record->[4]) and ($record->[4] < $value));
     } elsif ($datatype eq 'float') {
 	push @errors,sprintf("$list_name Entry called %s should be a number",$name) unless $value=~/^-?\d+(\.\d+)$/;
-	push @errors,sprintf("$list_name Entry called %s is less than minimum permitted value of $record->[3]",$name) if ((defined $record->[3]) and ($record->[3] > $value));
-	push @errors,sprintf("$list_name Entry called %s exceeds permitted value of $record->[4]",$name) if ((defined $record->[4]) and ($record->[4] < $value));
+	push @errors,sprintf("$list_name Entry called %s is less than minimum permitted value of $record->[3]",$name) if ($value=~/^-?\d+(\.\d+)$/ and (defined $record->[3]) and ($record->[3] > $value));
+	push @errors,sprintf("$list_name Entry called %s exceeds permitted value of $record->[4]",$name) if ($value=~/^-?\d+(\.\d+)$/ and (defined $record->[4]) and ($record->[4] < $value));
     } elsif ($datatype eq 'ip') {
 	push @errors,sprintf("$list_name Entry called %s should be an ip address",$name) unless $value=~/^\d\d?\d?\.\d\d?\d?\.\d\d?\d?\.\d\d?\d?$/;
     } elsif ($datatype eq 'cidr') {
@@ -123,6 +124,15 @@ sub type_check {
 	push @errors,sprintf("$list_name Entry called %s must be readable",$name) if ($record->[3]=~/r/ and -e $value and not -r $value);
 	push @errors,sprintf("$list_name Entry called %s must be writable",$name) if ($record->[3]=~/w/ and -e $value and  not -w $value);
 	push @errors,sprintf("$list_name Entry called %s must be executable",$name) if ($record->[3]=~/x/ and -e $value and not -x $value);
+    } elsif ($datatype eq 'debug_list') {
+	if ($value!~/,/) {
+	    push @errors,sprintf("$list_name Entry called %s cannot include '%s'",$name,$value) unless $value=~/^((none)|(all)|(timer-io)|(non-timer-io)|(io)|(show-wrappers)|(connections)|(doc-cache)|(channels)|(stack)|(update))$/;
+	} else {
+	    foreach my $v (split /\s*,\s*/,$value) {
+	    push @errors,sprintf("$list_name Entry called %s cannot include 'all' or 'none' in a comma-separated list",$name) if $v=~/^((none)|(all))$/;
+	    push @errors,sprintf("$list_name Entry called %s cannot include '%s'",$name,$v) unless $v=~/^((none)|(all)|(timer-io)|(non-timer-io)|(io)|(show-wrappers)|(connections)|(doc-cache)|(channels)|(stack)|(update))$/;
+	    }
+	}
     } else {
 	die sprintf("Unknown unit config datatype %s",$datatype);
     }
@@ -183,6 +193,8 @@ B<0.01>: First upload
 B<0.03>: First upload containing module
 
 B<0.04> Changed minimum perl version to 5.8.8
+
+B<0.05> Added debug_list data type, fixed uninitialised variable error when numbers aren't.
 
 =head1 COPYRIGHT AND LICENSE
 
